@@ -1,0 +1,7 @@
+torch>=2.6
+numpy>=1.24
+scipy>=1.10
+einops>=0.6
+opencv-python-headless>=4.8
+six>=1.16
+h5py>=3.8

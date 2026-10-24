@@ -1,0 +1,135 @@
+[
+  {
+    "file": "gray_cr8.mat",
+    "benchmark": "small-scale gray",
+    "scenes": [
+      "Aerial",
+      "Crash",
+      "Drop",
+      "Kobe",
+      "Runner",
+      "Traffic"
+    ],
+    "key": "mask",
+    "layout": "HWT",
+    "shape": [
+      256,
+      256,
+      8
+    ],
+    "dtype": "int64",
+    "binary": true,
+    "bytes": 4194496,
+    "sha256": "ad66fd694f23352d4415ab3f77e6bcce484937d2e8f3f7a881d46d5a88a47dba",
+    "value_range": [
+      0.0,
+      1.0
+    ],
+    "frames": 8
+  },
+  {
+    "file": "mid_color_cr8.mat",
+    "benchmark": "mid-scale color",
+    "scenes": [
+      "Beauty",
+      "Bosphorus",
+      "Jockey",
+      "Runner",
+      "ShakeNDry",
+      "Traffic"
+    ],
+    "key": "mask",
+    "layout": "HWT",
+    "shape": [
+      512,
+      512,
+      8
+    ],
+    "dtype": "float32",
+    "binary": true,
+    "bytes": 8388800,
+    "sha256": "a25539fdb8b4b7990581be1bb2df20bb52c59209566d114eeba731944ed1af8f",
+    "value_range": [
+      0.0,
+      1.0
+    ],
+    "frames": 8
+  },
+  {
+    "file": "large_color_1080x1920_cr8.mat",
+    "benchmark": "large-scale color",
+    "scenes": [
+      "Hummingbird",
+      "Messi",
+      "Swinger"
+    ],
+    "key": "mask",
+    "layout": "HWT",
+    "shape": [
+      1080,
+      1920,
+      8
+    ],
+    "dtype": "uint8",
+    "binary": true,
+    "bytes": 2638041,
+    "sha256": "27b5fe099d41a02424837ed9d0369bafa3be609118178a9fe86a17bf55d2409a",
+    "value_range": [
+      0.0,
+      1.0
+    ],
+    "frames": 8
+  },
+  {
+    "file": "large_color_822x1920_cr8.mat",
+    "benchmark": "large-scale color (Football)",
+    "scenes": [
+      "Football"
+    ],
+    "key": "mask",
+    "layout": "HWT",
+    "shape": [
+      822,
+      1920,
+      8
+    ],
+    "dtype": "uint8",
+    "binary": true,
+    "bytes": 2008126,
+    "sha256": "55eb779d6b0cb501221708778f679f8231242fe0c31b2b793f72bb5be11f7449",
+    "value_range": [
+      0.0,
+      1.0
+    ],
+    "frames": 8
+  },
+  {
+    "file": "real_mask.mat",
+    "benchmark": "real data (CR10 and CR50)",
+    "scenes": [
+      "Hand",
+      "Water Balloon",
+      "Domino",
+      "Pendulum Ball"
+    ],
+    "key": "mask",
+    "layout": "HWT",
+    "shape": [
+      512,
+      512,
+      50
+    ],
+    "dtype": "float32",
+    "binary": false,
+    "bytes": 23463852,
+    "sha256": "584d30b30d6fd773351f328605462aeb5a9783517d86065f3c57015bc058f030",
+    "value_range": [
+      0.0313725508749485,
+      1.0
+    ],
+    "frame_selection": {
+      "CR10": "mask[:, :, :10]",
+      "CR50": "mask[:, :, :50]"
+    }
+  }
+]

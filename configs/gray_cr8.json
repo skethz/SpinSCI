@@ -1,0 +1,93 @@
+{
+  "model": {
+    "type": "SpinSCI",
+    "color_channels": 1,
+    "dim": 64,
+    "frames": 8,
+    "blocks": 9,
+    "num_heads": 4,
+    "window": 7,
+    "pooled_window": 8,
+    "head_pools": [
+      1,
+      1,
+      2,
+      4
+    ],
+    "ffn_ratio": 2,
+    "stem_rank": 32,
+    "tail_rank": 32,
+    "cond_dim": 3,
+    "eps": 1e-08,
+    "return_intermediate": false,
+    "use_bayer_init": false,
+    "conditioning_mode": "backprojection",
+    "dc_position": "post",
+    "deep_supervision": true,
+    "aux_after": [
+      3,
+      6
+    ],
+    "ffn_impl": "cudnn",
+    "fp32_io": true,
+    "ising_cfg": {
+      "enable": true,
+      "space_enable": true,
+      "time_enable": true,
+      "K": 3,
+      "beta": 1.0,
+      "gamma": 1.0,
+      "signed": true,
+      "symmetric": true,
+      "topk": 0,
+      "gate_scale": 1.0,
+      "refine_hidden": 64,
+      "cond_dim": 3,
+      "cond_in_h": true,
+      "cond_in_J": true,
+      "lambda_mask": 1.0,
+      "lambda_res": 1.0,
+      "lambda_phis": 0.0,
+      "learn_lambda": true,
+      "learn_beta": true,
+      "learn_gamma": true,
+      "learn_gate_scale": true
+    }
+  },
+  "optimizer": {
+    "type": "HybridMuonAdamW",
+    "lr": 0.0002,
+    "adamw_lr": 0.0002,
+    "weight_decay": 0.0,
+    "adamw_weight_decay": 0.0,
+    "momentum": 0.95,
+    "nesterov": true,
+    "ns_steps": 5,
+    "adjust_lr_fn": "match_rms_adamw",
+    "min_muon_dim": 32,
+    "no_muon_keywords": [
+      "embed",
+      "embedding",
+      "pos_embed",
+      "relative_position_bias_table",
+      "to_h",
+      "to_m0",
+      "logit_scale"
+    ]
+  },
+  "training": {
+    "epochs": 200,
+    "crop_size": 256,
+    "batch_size": 10,
+    "batch_scope": "global",
+    "recommended_gpus": 4,
+    "lr": 0.0002,
+    "min_lr": 1e-06,
+    "grad_clip_norm": 1.0,
+    "seed": 2447,
+    "dataset": "DAVIS2017 official train split",
+    "loss": "final_mse",
+    "auxiliary_loss": false,
+    "ema": false
+  }
+}

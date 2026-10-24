@@ -1,0 +1,30 @@
+[
+  {
+    "file": "spinsci_color_cr8.pth",
+    "bytes": 79821325,
+    "sha256": "650470d0d1acab41cfd3898eba6795026760f02072163c2e4727ff24fb0b47f2",
+    "config": "configs/color_cr8.json",
+    "weights": "model_state_dict"
+  },
+  {
+    "file": "spinsci_gray_cr8.pth",
+    "bytes": 79727293,
+    "sha256": "96dc8b77e85589abcc7eb286ad4dfceb02126d55c1d1b96fb9987b7b513451ee",
+    "config": "configs/gray_cr8.json",
+    "weights": "model_state_dict"
+  },
+  {
+    "file": "spinsci_real_cr10.pth",
+    "bytes": 36126225,
+    "sha256": "f61a32346a88efaa4b195f2e1535726252ced4c57acc63cd274517965510fe0a",
+    "config": "configs/real_cr10.json",
+    "weights": "bare EMA state_dict (per supplied provenance)"
+  },
+  {
+    "file": "spinsci_real_cr50.pth",
+    "bytes": 36137745,
+    "sha256": "14c6d8136a63700f600914faefc3a206f55112ee497f7d6f39db4cbdb266fc3c",
+    "config": "configs/real_cr50.json",
+    "weights": "bare EMA state_dict (per supplied provenance)"
+  }
+]
