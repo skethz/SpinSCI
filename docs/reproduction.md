@@ -83,7 +83,7 @@ Gray normalization and measurement formation retain the source array precision
 before conversion to FP32 model inputs. Color arrays use FP32 throughout this
 preprocessing, matching the shared CACTI benchmark evaluator.
 The mask and normalizer also retain CACTI's column-major spatial storage for
-repeatable BF16 compiled inference; their values and image orientation are unchanged.
+consistent tensor layout across inference modes.
 
 For CACTI real files, the measurement is scaled as `meas / 255 * (T / 2)`:
 use `--measurement-scale 5` for CR10 and `--measurement-scale 25` for CR50.
@@ -108,7 +108,7 @@ export CUDA_VISIBLE_DEVICES=0
 python -m tools.evaluate_benchmarks --model spinsci \
   --config configs/gray_cr8.json --checkpoint checkpoints/spinsci_gray_cr8.pth \
   --channels 1 --data-root /path/to/gray --mask masks/gray_cr8.mat \
-  --frames 8 --layout gray --precision bf16 --compile \
+  --frames 8 --layout gray --precision fp32 \
   --output outputs/gray_benchmark
 
 python -m tools.evaluate_benchmarks --model spinsci \
@@ -163,10 +163,10 @@ python -m tools.profile_benchmarks --model spinsci \
   --config configs/gray_cr8.json --checkpoint checkpoints/spinsci_gray_cr8.pth \
   --case gray256 --mode costs --output outputs/gray_costs.json
 
-# Mid-color runtime and memory with the manuscript's SpinSCI settings.
+# Mid-color FP32 eager inference latency and peak memory.
 python -m tools.profile_benchmarks --model spinsci \
   --config configs/color_cr8.json --checkpoint checkpoints/spinsci_color_cr8.pth \
-  --case color512 --mode runtime --precision bf16 --compile \
+  --case color512 --mode runtime --precision fp32 --warmups 3 --runs 10 \
   --output outputs/color_runtime.json
 
 # Complete large-color inference cost and tiled runtime.
@@ -176,15 +176,11 @@ python -m tools.profile_benchmarks --model spinsci \
 
 python -m tools.profile_benchmarks --model spinsci \
   --config configs/color_cr8.json --checkpoint checkpoints/spinsci_color_cr8.pth \
-  --case large24 --mode runtime --precision bf16 --compile \
+  --case large24 --mode runtime --precision fp32 --warmups 3 --runs 10 \
   --output outputs/large_runtime.json
 ```
 
-The reference measurements use one NVIDIA GH200 144 GB, batch 1, and eight
-frames. Latency is the CUDA-synchronized wall-clock median of 20 runs after
-compilation and five warmups. Model initialization, compilation, input transfer,
-and file I/O are excluded. Peak allocated memory includes weights and resident
-inputs. Compiled inference is checked against eager execution before timing.
+The main-paper runtime comparisons use FP32 eager inference on one NVIDIA GH200 144 GB, batch size 1 and eight frames. SpinSCI-B uses three warm-ups and the median of ten CUDA-synchronized wall-clock measurements. The timed scope is the complete reconstruction from GPU-resident inputs. Peak allocated memory includes the weights and resident inputs. The appendix compares BF16 autocast with default Inductor compilation for all seven mid-color methods, using five warm-ups and twenty timed calls after compilation.
 
 One THOP module MAC is reported as one table FLOP. Functional attention products
 and unregistered elementwise operations are not included in that convention.
@@ -195,14 +191,12 @@ diagnostic and parameters whose owning modules did not execute.
 
 | Case | Exact parameters | FLOPs (G) | Latency (ms) | Table peak (MiB) |
 | --- | ---: | ---: | ---: | ---: |
-| Gray 256 x 256 | 7,465,294 | 1214.393011 | 40.609 | 1130.311 |
-| Color 512 x 512 | 7,469,266 | 4855.741374 | 152.410 | 4292.504 |
-| Large color | 7,469,266 | 38401.804538 | 1258.878 | 1474.400 |
+| Gray 256 x 256 | 7,465,294 | 1214.393011 | 132.116 | 1850.170 |
+| Color 512 x 512 | 7,469,266 | 4855.741374 | 630.086 | 7151.387 |
+| Large color | 7,469,266 | 38401.804538 | 4199.640 | 2423.724 |
 
-Large-color FLOPs use a full 1080 x 1920 forward. Runtime executes 24 sequential
-272 x 320 tiles, assembles a 1088 x 1920 output on the GPU, and crops to
-1080 x 1920. Table memory is the standalone tile peak; full-pipeline memory is
-recorded separately (1745.619 MiB for the reference SpinSCI run). Runtime and
+Large-color SpinSCI-B FLOPs use a full 1080 × 1920 forward. For every method,
+the Table 6 latency estimate is 24 times the median time for a standalone 272 × 320 tile. Table memory is the peak allocation for that tile. The profiler also directly times 24 sequential tile forwards and assembly on the GPU, including a crop from 1088 × 1920 to 1080 × 1920. The separate `whole_snapshot` record for SpinSCI-B is 4187.269 ms and 2693.998 MiB. Runtime and
 memory can vary slightly between runs. Hardware, software versions, checkpoint
 hashes, and timing samples are saved in each generated JSON result.
 
@@ -235,8 +229,7 @@ Use `--channels 3 --layout mid_rot90` for mid-color or
 `--channels 3 --layout large_hdf5` for large-color quality evaluation, with the
 color checkpoint and corresponding masks. Add `--precision bf16 --compile` to
 the profiler for a matched compiled-execution comparison. In that setting DU
-uses less peak memory than SpinSCI but remains slower; the manuscript's baseline
-runtime values use FP32 eager execution.
+uses less peak memory than SpinSCI but remains slower; the main-paper runtime comparisons use FP32 eager execution for every method.
 
 | Benchmark | DU reported PSNR | DU measured PSNR | Quality values used in comparisons |
 | --- | ---: | ---: | --- |

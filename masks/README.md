@@ -35,7 +35,7 @@ conventions.
 python -m tools.evaluate_benchmarks --model spinsci \
   --config configs/gray_cr8.json --checkpoint checkpoints/spinsci_gray_cr8.pth \
   --channels 1 --data-root /path/to/gray --mask masks/gray_cr8.mat \
-  --frames 8 --layout gray --precision bf16 --compile --no-images \
+  --frames 8 --layout gray --precision fp32 --no-images \
   --output outputs/gray_benchmark
 
 python -m tools.evaluate_benchmarks --model spinsci \

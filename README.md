@@ -9,13 +9,13 @@ ETH AI Center, ETH Zurich
 [![Pretrained Models](https://img.shields.io/badge/Pretrained_Models-4_checkpoints-215CAF)](checkpoints/)
 [![Results](https://img.shields.io/badge/Results-Benchmarks-215CAF)](#results)
 
-> **Abstract:** Video snapshot compressive imaging (SCI) recovers multiple frames from one spatiotemporally coded measurement. This paper proposes *SpinSCI*, a mask-conditioned Spatial-Temporal Spin Transformer whose *Mask-Conditioned Ising Refinement Block (MC-IRB)* combines attention logits and sensing information to form signed spin couplings. Finite mean-field updates gate residual feature refinement. Physics-guided initialization and final data consistency incorporate the measurement model. Compared with HiSViT<sub>9</sub>, SpinSCI achieves average PSNR gains of **0.50 dB**, **0.23 dB**, and **0.04 dB** on *small-scale gray, mid-scale color, and large-scale color benchmarks*, respectively, with **16.9% fewer parameters, 21.0–21.6% fewer FLOPs, 77.0–85.0% lower inference latency, and 77.0–77.9% lower peak memory**. Relative to DU-9stg, average PSNR differs by at most **0.13 dB** across these benchmarks, with **28.2–28.7% fewer FLOPs, 90.6–91.5% lower inference latency, and 57.3–60.5% lower peak memory**. Qualitative comparisons on the *real benchmark* further show recovery of fine details and textures.
+> **Abstract:** Video snapshot compressive imaging (SCI) recovers multiple frames from one spatiotemporally coded measurement. This paper proposes *SpinSCI*, a mask-conditioned Spatial-Temporal Spin Transformer whose *Mask-Conditioned Ising Refinement Block (MC-IRB)* combines attention logits and sensing information to form signed spin couplings. Finite mean-field updates gate residual feature refinement. Physics-guided initialization and final data consistency incorporate the measurement model. Compared with HiSViT<sub>9</sub>, SpinSCI achieves average PSNR gains of **0.51 dB**, **0.23 dB**, and **0.04 dB** on *small-scale gray, mid-scale color, and large-scale color benchmarks*, respectively, with **16.9% fewer parameters, 20.9–21.6% fewer FLOPs, 17.1–49.9% lower FP32 eager latency, and 62.3–63.3% lower peak memory**. Relative to DU-9stg, average PSNR differs by at most **0.13 dB** across these benchmarks, with **28.2–28.7% fewer FLOPs, 64.6–71.7% lower inference latency, and 30.1–35.0% lower peak memory**. Qualitative comparisons on the *real benchmark* further show recovery of fine details and textures.
 
 <p align="center">
-  <img src="figures/efficiency.png" width="980" alt="Mid-scale color PSNR versus FLOPs and latency for SpinSCI and the comparison methods">
+  <img src="figures/efficiency.png" width="980" alt="Mid-scale color PSNR versus FLOPs and FP32 eager latency for all seven methods">
 </p>
 
-*Reconstruction quality and efficiency on the mid-scale color benchmark. Measurement settings are described in [Results](#results) and the [reproduction guide](docs/reproduction.md#efficiency-profiling).*
+*Mid-scale color PSNR versus FLOPs (left) and FP32 eager latency (right). Circle diameter represents parameter count on the left and circle area represents peak allocated memory on the right. Measurement settings are described in [Results](#results) and the [reproduction guide](docs/reproduction.md#efficiency-profiling).*
 
 ## 📑 Contents
 
@@ -144,11 +144,11 @@ Supply the original benchmark MATLAB files, one per sequence, and select the mat
 ```bash
 export CUDA_VISIBLE_DEVICES=0
 
-# Small-scale gray: BF16 compiled inference.
+# Small-scale gray: full-frame FP32 eager inference.
 python -m tools.evaluate_benchmarks --model spinsci \
   --config configs/gray_cr8.json --checkpoint checkpoints/spinsci_gray_cr8.pth \
   --channels 1 --data-root /path/to/gray --mask masks/gray_cr8.mat \
-  --frames 8 --layout gray --precision bf16 --compile --no-images \
+  --frames 8 --layout gray --precision fp32 --no-images \
   --output outputs/gray_eval
 
 # Mid-scale color: full-frame FP32 inference.
@@ -175,7 +175,7 @@ Average **PSNR (dB) / SSIM** at compression rate 8. Best and second-best scores 
 | STFormer-B | 36.34 / 0.974 | 37.32 / 0.970 | 36.38 / 0.971 |
 | HiSViT<sub>9</sub> | 37.00 / <ins>0.978</ins> | 38.01 / <ins>0.972</ins> | 37.64 / **0.980** |
 | DU-9stg | **37.57** / **0.980** | <ins>38.12</ins> / **0.973** | **37.80** / **0.980** |
-| **SpinSCI-B** | <ins>37.50</ins> / **0.980** | **38.24** / **0.973** | <ins>37.68</ins> / <ins>0.979</ins> |
+| **SpinSCI-B** | <ins>37.51</ins> / **0.980** | **38.24** / **0.973** | <ins>37.68</ins> / <ins>0.979</ins> |
 
 Small-scale gray and mid-scale color baseline PSNR/SSIM values come from the respective papers. DU-9stg uses measured mid-color scores because its measured mean is 0.18 dB below the reported mean. Large-scale baseline quality uses official-checkpoint evaluations. MambaSCI is designed for quad-Bayer measurements and its paper does not report grayscale results, so its gray entry is omitted. The [DU comparison](docs/reproduction.md#du-9stg-comparison) lists reported and measured PSNR separately.
 
@@ -183,18 +183,18 @@ Small-scale gray and mid-scale color baseline PSNR/SSIM values come from the res
 
 | Benchmark | Params (M) | FLOPs (G) | Latency (ms) | Peak memory (MiB) |
 | --- | ---: | ---: | ---: | ---: |
-| Small-scale gray | 7.47 | 1214 | 41 | 1130 |
-| Mid-scale color | 7.47 | 4856 | 152 | 4293 |
-| Large-scale color | 7.47 | 38402 | 1259 | 1474 |
+| Small-scale gray | 7.47 | 1214 | 132 | 1850 |
+| Mid-scale color | 7.47 | 4856 | 630 | 7151 |
+| Large-scale color | 7.47 | 38402 | 4200 | 2424 |
 
-Profiling uses one NVIDIA GH200, batch 1, and eight frames. SpinSCI runtime uses BF16 autocast and `torch.compile`; baseline timings in the comparison plot use FP32 eager inference. One THOP module MAC counts as one table FLOP. Large-scale latency covers 24 sequential tiles; peak memory is measured per tile. Complete commands, counting conventions, and precise measurements are in the [efficiency guide](docs/reproduction.md#efficiency-profiling).
+All methods in the main-paper comparison use FP32 eager inference on an NVIDIA GH200 with batch size 1 and eight frames. One THOP module MAC counts as one FLOP. For every method, large-scale latency is estimated as 24 times the measured median for one tile. Peak memory is measured per tile. The [efficiency guide](docs/reproduction.md#efficiency-profiling) gives the profiling commands and exact values.
 
 ```bash
 export CUDA_VISIBLE_DEVICES=0
 
 python -m tools.profile_benchmarks --model spinsci \
   --config configs/color_cr8.json --checkpoint checkpoints/spinsci_color_cr8.pth \
-  --case color512 --mode runtime --precision bf16 --compile \
+  --case color512 --mode runtime --precision fp32 --warmups 3 --runs 10 \
   --output outputs/color_runtime.json
 ```
 

@@ -2,9 +2,9 @@
 
 THOP's module MAC count is reported separately from exact parameter totals.
 Runtime profiling uses no_grad, resident inputs, synchronized wall-clock timing,
-five warmups and median of 20 runs. Large latency executes and stitches 24 tiles;
-its table memory is the standalone tile peak. FLOPs use an actual full-frame
-forward, not an area estimate. No dataset is required.
+configurable warmups and the median of synchronized runs. Large table latency
+is 24 times the standalone tile median. The stitched snapshot is timed separately.
+FLOPs use a full-frame forward. No dataset is required.
 """
 import argparse
 from contextlib import nullcontext
@@ -159,7 +159,9 @@ def main():
                             del prediction
                         return assembled[..., :1080, :1920]
                     record['whole_snapshot'] = measure(snapshot, a.warmups, a.runs)
-                    record['table_latency_ms'] = record['whole_snapshot']['latency_ms_median']
+                    # Every large-scale table entry uses 24 times the median of one tile.
+                    record['table_latency_ms'] = len(tiles) * record['single_forward']['latency_ms_median']
+                    record['table_latency_scope'] = '24 times the standalone tile median; direct timing is in whole_snapshot'
                     record['memory_scope'] = 'Standalone tile; full 24-tile assembly peak stored separately'
                 else:
                     record['memory_scope'] = 'Full frame'
