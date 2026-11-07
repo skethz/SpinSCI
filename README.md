@@ -84,7 +84,7 @@ The [mask guide](masks/README.md) provides complete commands for every benchmark
 
 ## <a name="inference"></a> 🔧 Inference
 
-Reconstruct real CR10 measurements with the released real-data checkpoint:
+Reconstruct real CR10 measurements in FP32 eager mode with the released real-data checkpoint:
 
 ```bash
 export CUDA_VISIBLE_DEVICES=0
@@ -92,7 +92,7 @@ export CUDA_VISIBLE_DEVICES=0
 python -m tools.evaluate_benchmarks --model spinsci \
   --config configs/real_cr10.json --checkpoint checkpoints/spinsci_real_cr10.pth \
   --real --channels 1 --data-root /path/to/real_cr10 --mask masks/real_mask.mat \
-  --frames 10 --layout gray --precision bf16 --save-raw \
+  --frames 10 --layout gray --precision fp32 --save-raw \
   --output outputs/real_cr10
 ```
 

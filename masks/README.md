@@ -61,12 +61,12 @@ python -m tools.evaluate_benchmarks --model spinsci \
 python -m tools.evaluate_benchmarks --model spinsci \
   --config configs/real_cr10.json --checkpoint checkpoints/spinsci_real_cr10.pth \
   --real --channels 1 --data-root /path/to/real_cr10 --mask masks/real_mask.mat \
-  --frames 10 --layout gray --precision bf16 --output outputs/real_cr10
+  --frames 10 --layout gray --precision fp32 --output outputs/real_cr10
 
 python -m tools.evaluate_benchmarks --model spinsci \
   --config configs/real_cr50.json --checkpoint checkpoints/spinsci_real_cr50.pth \
   --real --channels 1 --data-root /path/to/real_cr50 --mask masks/real_mask.mat \
-  --frames 50 --layout gray --precision bf16 --output outputs/real_cr50
+  --frames 50 --layout gray --precision fp32 --output outputs/real_cr50
 ```
 
 The real-data commands apply the evaluator's `meas / 255 * (T / 2)` convention.

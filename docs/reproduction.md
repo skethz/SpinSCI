@@ -128,7 +128,7 @@ Metrics use unclipped, unrounded values. Display PNGs use a fixed intensity
 scale: `round(clip(prediction, 0, 1) * 255)`.
 
 For real SpinSCI frame exports, select the real configuration and checkpoint,
-then pass `--real --channels 1 --frames 10 --layout gray --precision bf16`
+then pass `--real --channels 1 --frames 10 --layout gray --precision fp32`
 (or the CR50 configuration, checkpoint, and `--frames 50`). Both use
 `--mask masks/real_mask.mat`; the evaluator selects the first 10 or all 50 mask
 frames and applies `meas / 255 * (T / 2)` automatically. Real-data
