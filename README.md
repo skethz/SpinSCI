@@ -244,6 +244,9 @@ These checks exercise checkpoint compatibility, small reconstruction forwards, m
   title = {SpinSCI: Mask-Conditioned Spatial-Temporal Spin Transformer for Video Snapshot Compressive Imaging},
   author = {Seungki Hong and Zhishuai Zhang and Taekwang Jang},
   year = {2026},
-  url = {https://github.com/skethz/SpinSCI}
+  eprint = {2611.11753},
+  archivePrefix = {arXiv},
+  primaryClass = {cs.CV},
+  url = {https://arxiv.org/abs/2611.11753}
 }
 ```
