@@ -5,6 +5,7 @@ Official PyTorch implementation of **SpinSCI**, with training and evaluation cod
 By **Seungki Hong**, **Zhishuai Zhang**, and **Taekwang Jang**<br>
 ETH AI Center, ETH Zurich
 
+[![arXiv](https://img.shields.io/badge/arXiv-2611.11753-215CAF?logo=arxiv)](https://arxiv.org/abs/2611.11753)
 [![Code](https://img.shields.io/badge/Code-GitHub-215CAF?logo=github)](https://github.com/skethz/SpinSCI)
 [![Pretrained Models](https://img.shields.io/badge/Pretrained_Models-4_checkpoints-215CAF)](checkpoints/)
 [![Results](https://img.shields.io/badge/Results-Benchmarks-215CAF)](#results)
