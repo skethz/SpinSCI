@@ -190,6 +190,8 @@ Small-scale gray and mid-scale color baseline PSNR/SSIM values come from the res
 
 All methods in the main-paper comparison use FP32 eager inference on an NVIDIA GH200 with batch size 1 and eight frames. One THOP module MAC counts as one FLOP. Large-scale latency and peak memory cover one complete snapshot: 24 sequential tile forwards with output assembly on the GPU. The [efficiency guide](docs/reproduction.md#efficiency-profiling) gives the profiling commands for SpinSCI-B and the [baselines](docs/reproduction.md#baseline-profiling), and the exact values.
 
+> **Warning.** Latency and peak memory depend on everything else running on the machine. If a measured value differs from the paper, check whether other jobs are using the same GPU or loading the CPU (`nvidia-smi`, `top`), then measure again on an idle node. The profilers and evaluators print this warning and record any other compute processes on the GPU before and after timing (`other_gpu_processes`).
+
 ```bash
 export CUDA_VISIBLE_DEVICES=0
 

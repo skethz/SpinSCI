@@ -8,6 +8,10 @@ from pathlib import Path
 import torch
 
 from cacti.release import create_model, load_reference, mask_normalizer, read_config
+try:
+    from .snapshot_timing import check_interference
+except ImportError:
+    from snapshot_timing import check_interference
 
 
 def main():
@@ -49,6 +53,7 @@ def main():
         if not torch.isfinite(candidate).all() or relative_rms >= .02:
             raise RuntimeError("Compiled/eager mismatch; do not use these timings")
         del reference, candidate, difference
+        others = check_interference("before timing")
         for _ in range(args.warmups):
             model(y, phi, phis)
         torch.cuda.synchronize()
@@ -60,6 +65,7 @@ def main():
             torch.cuda.synchronize()
             samples.append((time.perf_counter()-started)*1000)
             del result
+        others = sorted(set(others + check_interference("after timing")))
     result = {"gpu": torch.cuda.get_device_name(), "torch": torch.__version__, "cuda": torch.version.cuda,
               "input_hw": [args.height, args.width], "frames": config["model"]["frames"],
               "batch_size": 1, "precision": "BF16 with FP32 input/output", "compiled": True,
@@ -67,6 +73,7 @@ def main():
               "compiled_vs_eager_relative_rms": relative_rms,
               "median_ms": statistics.median(samples),
               "peak_allocated_mib": torch.cuda.max_memory_allocated()/2**20,
+              "other_gpu_processes": others,
               "parameters_total": parameters_total,
               "inference_parameters": inference_parameters,
               "parameter_convention": "Table counts include all parameters; inference_parameters excludes the auxiliary head",

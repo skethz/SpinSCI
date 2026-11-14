@@ -151,6 +151,13 @@ rescaling.
 
 ## Efficiency profiling
 
+> **Warning.** Latency and peak memory depend on everything else running on the
+> machine. If a measured value differs from the paper, check whether other jobs
+> are using the same GPU or loading the CPU (`nvidia-smi`, `top`), then measure
+> again on an idle node. The profilers and evaluators print this warning and
+> record any other compute processes on the GPU before and after timing
+> (`other_gpu_processes`).
+
 `tools.profile_benchmarks` measures exact parameter totals, module operation
 counts, latency, and peak allocated memory using synthetic inputs. No dataset
 is required. Expose one GPU and use the matching gray/color configuration:
@@ -285,9 +292,6 @@ Values from one run of these commands on an NVIDIA GH200 (FP32 eager):
 | HiSViT<sub>9</sub> | Gray 256 × 256 | 8.99 | 1,536 | 176 | 4,840 |
 | HiSViT<sub>9</sub> | Color 512 × 512 | 8.99 | 6,146 | 757 | 19,156 |
 | HiSViT<sub>9</sub> | Large color | 8.99 | 48,977 | 8,173 | 6,715 |
-
-PnP-FastDVDNet's color path demosaics on the CPU in every iteration, so its
-latency also depends on the host CPU and its load.
 
 `tools.profile` is a simpler single-forward utility with the same eager-reference
 check before compilation, warmups, and timing. It reports total parameters and

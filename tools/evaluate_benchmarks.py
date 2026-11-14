@@ -20,8 +20,10 @@ import scipy.io as sio
 import torch
 try:
     from .benchmark_models import build, call, sha256
+    from .snapshot_timing import check_interference
 except ImportError:
     from benchmark_models import build, call, sha256
+    from snapshot_timing import check_interference
 from cacti.utils.metrics import compare_psnr, compare_ssim
 
 
@@ -125,6 +127,7 @@ def main():
         phis = torch.from_numpy(total[None,None]).cuda()
         rec['input_hw'] = [height, width]
         rec['mask_array_sha256'] = __import__('hashlib').sha256(mask.astype(np.uint8).tobytes()).hexdigest()
+        others = check_interference('before evaluation')
         for path in sorted(Path(a.data_root).glob('*.mat')):
             if path.name.startswith('._'):
                 continue
@@ -195,6 +198,7 @@ def main():
             del data
         if not a.real:
             rec.update({key+'_mean':float(np.mean([s[key] for s in rec['scenes'].values()])) for key in ['psnr','ssim']})
+        rec['other_gpu_processes'] = sorted(set(others + check_interference('after evaluation')))
         rec.update({'status':'complete','finished_utc':datetime.now(timezone.utc).isoformat(),
                     'total_frames':sum(s['frames'] for s in rec['scenes'].values())})
         write(a.output/'metrics.json',rec)
