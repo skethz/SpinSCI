@@ -1,0 +1,19 @@
+diff --git a/model/block.py b/model/block.py
+index f0ea1d4..ba55909 100644
+--- a/model/block.py
++++ b/model/block.py
+@@ -215,6 +215,14 @@ class CSS_MSA_block(nn.Module):
+ 
+         k_ = None
+         if self.pool_kernel > 1:
++            max_q_split_size = max(self.split_size[0], self.split_size[1]) * self.pool_kernel
++            pad_l = pad_t = 0
++            pad_r = (max_q_split_size - W % max_q_split_size) % max_q_split_size
++            pad_b = (max_q_split_size - H % max_q_split_size) % max_q_split_size
++            if pad_r or pad_b:
++                q = F.pad(q, (pad_l, pad_r, pad_t, pad_b))
++                k = F.pad(k, (pad_l, pad_r, pad_t, pad_b))
++                v = F.pad(v, (pad_l, pad_r, pad_t, pad_b))
+             k_ = einops.rearrange(k,'b c t h w-> (b t) c h w')
+             k_ = F.avg_pool2d(k_, kernel_size=self.pool_kernel)
+             k_ = einops.rearrange(k_,'(b t) c h w-> b c t h w', b=B,t=T)

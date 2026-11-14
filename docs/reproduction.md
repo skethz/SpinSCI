@@ -193,12 +193,101 @@ diagnostic and parameters whose owning modules did not execute.
 | --- | ---: | ---: | ---: | ---: |
 | Gray 256 x 256 | 7,465,294 | 1214.393011 | 132.116 | 1850.170 |
 | Color 512 x 512 | 7,469,266 | 4855.741374 | 630.086 | 7151.387 |
-| Large color | 7,469,266 | 38401.804538 | 4199.640 | 2423.724 |
+| Large color | 7,469,266 | 38401.804538 | 4168.856 | 2694.662 |
 
-Large-color SpinSCI-B FLOPs use a full 1080 × 1920 forward. For every method,
-the Table 6 latency estimate is 24 times the median time for a standalone 272 × 320 tile. Table memory is the peak allocation for that tile. The profiler also directly times 24 sequential tile forwards and assembly on the GPU, including a crop from 1088 × 1920 to 1080 × 1920. The separate `whole_snapshot` record for SpinSCI-B is 4187.269 ms and 2693.998 MiB. Runtime and
+Large-color SpinSCI-B FLOPs use a full 1080 × 1920 forward. Large-color latency
+and peak memory cover one complete snapshot for every method: the 1080 × 1920
+input is padded to 1088 × 1920 and reconstructed as 24 sequential 272 × 320 tile
+forwards, whose outputs are assembled on the GPU and cropped back to
+1080 × 1920. The padded inputs and the assembled output stay resident, so the
+peak includes them. The JSON result stores this measurement as `whole_snapshot`
+and a single-tile measurement as `single_forward`. Runtime and
 memory can vary slightly between runs. Hardware, software versions, checkpoint
 hashes, and timing samples are saved in each generated JSON result.
+
+### Baseline profiling
+
+`tools.profile_baselines` reproduces the Params, FLOPs, latency, and peak memory
+of the other methods in Tables 4–6. It uses the same synthetic inputs, timing,
+and memory conventions as `tools.profile_benchmarks`, and loads each method from
+its official repository and checkpoint:
+
+| Method | Official repository | Commit | Gray / color checkpoint |
+| --- | --- | --- | --- |
+| PnP-FastDVDNet | [ucaswangls/cacti](https://github.com/ucaswangls/cacti) | `4085c99` | `fastdvd_gray.pth` / `fastdvd_color.pth` |
+| EfficientSCI-B | [ucaswangls/EfficientSCI](https://github.com/ucaswangls/EfficientSCI) | `f123d46` | `efficientsci_base.pth` / `efficientsci_base_mid_color.pth` |
+| STFormer-B | [ucaswangls/STFormer](https://github.com/ucaswangls/STFormer) | `5963025` | `stformer_base.pth` / `stformer_base_mid_color.pth` |
+| MambaSCI-B | [PAN083/MambaSCI](https://github.com/PAN083/MambaSCI) | `98266e1` | — / `MambaSCI_base.pth` |
+| HiSViT<sub>9</sub> | [pwangcs/HiSViT](https://github.com/pwangcs/HiSViT) | `a9e6f06` | `hisvit9_gray.pth` / `hisvit9_color.pth` |
+
+Check out each repository at the listed commit and download its checkpoints from
+the links in its README. Full commit hashes are listed in
+[`tools/baseline_models.py`](../tools/baseline_models.py). The models are built
+from each repository's own test configuration and loaded strictly. For the
+272 × 320 large-color tiles, HiSViT<sub>9</sub> needs
+[`patches/hisvit_pooled_padding.patch`](../patches/hisvit_pooled_padding.patch),
+which pads the pooled attention inputs to a whole number of pooled windows.
+It changes nothing at 256 × 256 or 512 × 512:
+
+```bash
+git -C /path/to/HiSViT apply /path/to/SpinSCI/patches/hisvit_pooled_padding.patch
+```
+
+Several of these repositories ship a top-level `cacti` package, so each run
+loads one baseline. Run from this repository root and expose one GPU:
+
+```bash
+export CUDA_VISIBLE_DEVICES=0
+
+# Params and FLOPs for a full 256 x 256 gray snapshot.
+python -m tools.profile_baselines --method efficientsci --root /path/to/EfficientSCI \
+  --checkpoint /path/to/EfficientSCI/checkpoints/efficientsci_base.pth \
+  --case gray256 --mode costs --output outputs/efficientsci_gray_costs.json
+
+# Large-color FP32 eager latency and peak memory for one whole snapshot.
+python -m tools.profile_baselines --method hisvit --root /path/to/HiSViT \
+  --checkpoint /path/to/HiSViT/checkpoint/hisvit9_color.pth \
+  --case large24 --mode runtime --output outputs/hisvit_large_runtime.json
+```
+
+`--method` is `pnp`, `efficientsci`, `stformer`, `mambasci`, or `hisvit`, and
+`--case` is `gray256`, `color512`, or `large24`. The gray case uses the gray
+checkpoint and the other cases use the color checkpoint. Learned baselines use
+three warm-ups followed by 40, 20, or 10 timed calls for gray, mid-color, or
+large-color. PnP-FastDVDNet uses one warm-up and three timed calls. Each JSON
+result stores the table values (`table_gflops`, `table_latency_ms`,
+`table_peak_memory_mib`) with the checkout commit, checkpoint hash, GPU state,
+and timing samples.
+
+Learned baselines count THOP module MACs. PnP-FastDVDNet counts its complete
+iterative reconstruction with PyTorch's operator-level FLOP counter, with
+MACs = FLOPs / 2. Large-color FLOPs use a full 1080 × 1920 forward, except for
+HiSViT<sub>9</sub> and PnP-FastDVDNet, which are counted over the 24 tiles.
+HiSViT<sub>9</sub> is timed from its prepared network input, as in its test
+code. DU-9stg is profiled with `tools.profile_benchmarks --model du` (see
+below).
+
+Values from one run of these commands on an NVIDIA GH200 (FP32 eager):
+
+| Method | Case | Params (M) | FLOPs (G) | Latency (ms) | Peak (MiB) |
+| --- | --- | ---: | ---: | ---: | ---: |
+| PnP-FastDVDNet | Gray 256 × 256 | 2.47 | 29,605 | 1,265 | 618 |
+| PnP-FastDVDNet | Color 512 × 512 | 2.48 | 120,077 | 40,317 | 2,648 |
+| PnP-FastDVDNet | Large color | 2.48 | 956,865 | 297,970 | 1,029 |
+| EfficientSCI-B | Gray 256 × 256 | 8.82 | 1,424 | 49 | 1,355 |
+| EfficientSCI-B | Color 512 × 512 | 8.83 | 5,702 | 211 | 5,207 |
+| EfficientSCI-B | Large color | 8.83 | 45,100 | 1,597 | 2,046 |
+| STFormer-B | Gray 256 × 256 | 19.49 | 3,060 | 82 | 1,745 |
+| STFormer-B | Color 512 × 512 | 19.49 | 12,155 | 369 | 6,368 |
+| STFormer-B | Large color | 19.49 | 96,071 | 2,578 | 2,478 |
+| MambaSCI-B | Color 512 × 512 | 8.59 | 557 | 974 | 3,809 |
+| MambaSCI-B | Large color | 8.59 | 4,405 | 7,645 | 1,587 |
+| HiSViT<sub>9</sub> | Gray 256 × 256 | 8.99 | 1,536 | 176 | 4,840 |
+| HiSViT<sub>9</sub> | Color 512 × 512 | 8.99 | 6,146 | 757 | 19,156 |
+| HiSViT<sub>9</sub> | Large color | 8.99 | 48,977 | 8,173 | 6,715 |
+
+PnP-FastDVDNet's color path demosaics on the CPU in every iteration, so its
+latency also depends on the host CPU and its load.
 
 `tools.profile` is a simpler single-forward utility with the same eager-reference
 check before compilation, warmups, and timing. It reports total parameters and

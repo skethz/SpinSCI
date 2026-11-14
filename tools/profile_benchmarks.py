@@ -2,8 +2,9 @@
 
 THOP's module MAC count is reported separately from exact parameter totals.
 Runtime profiling uses no_grad, resident inputs, synchronized wall-clock timing,
-configurable warmups and the median of synchronized runs. Large table latency
-is 24 times the standalone tile median. The stitched snapshot is timed separately.
+configurable warmups and the median of synchronized runs. Large-scale latency and
+peak memory cover one whole snapshot: 24 sequential 272 x 320 tile forwards of a
+resident 1088 x 1920 input and assembly of the 1080 x 1920 output on the GPU.
 FLOPs use a full-frame forward. No dataset is required.
 """
 import argparse
@@ -12,7 +13,6 @@ from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
-import statistics
 import subprocess
 import sys
 import time
@@ -21,8 +21,10 @@ import traceback
 import torch
 try:
     from .benchmark_models import build, call, sha256
+    from .snapshot_timing import PADDED, TILE, measure, tiled_snapshot
 except ImportError:
     from benchmark_models import build, call, sha256
+    from snapshot_timing import PADDED, TILE, measure, tiled_snapshot
 
 
 def write(path, record):
@@ -30,25 +32,6 @@ def write(path, record):
     tmp = path.with_suffix('.tmp')
     tmp.write_text(json.dumps(record, indent=2) + '\n')
     tmp.replace(path)
-
-
-def measure(fn, warmups, runs):
-    for _ in range(warmups):
-        output = fn()
-        del output
-    torch.cuda.synchronize()
-    torch.cuda.reset_peak_memory_stats()
-    samples = []
-    for _ in range(runs):
-        torch.cuda.synchronize()
-        started = time.perf_counter()
-        output = fn()
-        torch.cuda.synchronize()
-        samples.append((time.perf_counter() - started) * 1000)
-        del output
-    return {'latency_ms_samples': samples, 'latency_ms_median': statistics.median(samples),
-            'peak_allocated_mib': torch.cuda.max_memory_allocated() / 2**20,
-            'peak_reserved_mib': torch.cuda.max_memory_reserved() / 2**20}
 
 
 def inputs_at(height, width):
@@ -78,7 +61,8 @@ def main():
     record = {'status': 'running', 'model': a.model, 'case': a.case, 'mode': a.mode,
               'started_utc': datetime.now(timezone.utc).isoformat(), 'command': sys.argv,
               'profiler_sha256': sha256(__file__),
-              'adapter_sha256': sha256(Path(__file__).with_name('benchmark_models.py'))}
+              'adapter_sha256': sha256(Path(__file__).with_name('benchmark_models.py')),
+              'timing_sha256': sha256(Path(__file__).with_name('snapshot_timing.py'))}
     write(a.output, record)
     try:
         assert torch.cuda.device_count() == 1, 'Expose exactly the requested GPU using CUDA_VISIBLE_DEVICES'
@@ -101,7 +85,7 @@ def main():
                            '--query-gpu=name,memory.used,utilization.gpu,temperature.gpu,power.draw,clocks.sm',
                            '--format=csv'], text=True)})
         height, width = {'gray256': (256, 256), 'color512': (512, 512),
-                         'large24': (1080, 1920) if a.mode == 'costs' else (272, 320)}[a.case]
+                         'large24': (1080, 1920) if a.mode == 'costs' else TILE}[a.case]
         inputs = inputs_at(height, width)
         record['input_hw'] = [height, width]
         print('LOADED', a.model, a.case, record['parameters_total'], flush=True)
@@ -149,20 +133,15 @@ def main():
                 record['table_latency_ms'] = record['single_forward']['latency_ms_median']
                 record['table_peak_memory_mib'] = record['single_forward']['peak_allocated_mib']
                 if a.case == 'large24':
-                    tiles = [inputs_at(272, 320) for _ in range(24)]
-                    def snapshot():
-                        assembled = inputs[0].new_empty((1, 3, 8, 1088, 1920))
-                        for index, tile in enumerate(tiles):
-                            row, col = divmod(index, 6)
-                            prediction = call(model, a.model, tile)
-                            assembled[..., row*272:(row+1)*272, col*320:(col+1)*320] = prediction
-                            del prediction
-                        return assembled[..., :1080, :1920]
+                    # The table reports the whole snapshot; the single tile above is kept for reference.
+                    del inputs
+                    torch.cuda.empty_cache()
+                    padded = inputs_at(*PADDED)
+                    snapshot = tiled_snapshot(lambda *tile: call(model, a.model, tile), padded)
                     record['whole_snapshot'] = measure(snapshot, a.warmups, a.runs)
-                    # Every large-scale table entry uses 24 times the median of one tile.
-                    record['table_latency_ms'] = len(tiles) * record['single_forward']['latency_ms_median']
-                    record['table_latency_scope'] = '24 times the standalone tile median; direct timing is in whole_snapshot'
-                    record['memory_scope'] = 'Standalone tile; full 24-tile assembly peak stored separately'
+                    record['table_latency_ms'] = record['whole_snapshot']['latency_ms_median']
+                    record['table_peak_memory_mib'] = record['whole_snapshot']['peak_allocated_mib']
+                    record['memory_scope'] = 'Whole snapshot: 24 tile forwards and assembly, padded input resident'
                 else:
                     record['memory_scope'] = 'Full frame'
         record.update({'status': 'complete', 'finished_utc': datetime.now(timezone.utc).isoformat()})

@@ -10,7 +10,7 @@ ETH AI Center, ETH Zurich
 [![Pretrained Models](https://img.shields.io/badge/Pretrained_Models-4_checkpoints-215CAF)](checkpoints/)
 [![Results](https://img.shields.io/badge/Results-Benchmarks-215CAF)](#results)
 
-> **Abstract:** Video snapshot compressive imaging (SCI) recovers multiple frames from one spatiotemporally coded measurement. This paper proposes *SpinSCI*, a mask-conditioned Spatial-Temporal Spin Transformer whose *Mask-Conditioned Ising Refinement Block (MC-IRB)* combines attention logits and sensing information to form signed spin couplings. Finite mean-field updates gate residual feature refinement. Physics-guided initialization and final data consistency incorporate the measurement model. Compared with HiSViT<sub>9</sub>, SpinSCI achieves average PSNR gains of **0.51 dB**, **0.23 dB**, and **0.04 dB** on *small-scale gray, mid-scale color, and large-scale color benchmarks*, respectively, with **16.9% fewer parameters, 21.0–21.6% fewer FLOPs, 17.1–49.9% lower latency, and 62.3–63.3% lower peak memory**. Relative to DU-9stg, average PSNR differs by at most **0.13 dB** across these benchmarks, with **28.2–28.7% fewer FLOPs, 64.6–71.7% lower inference latency, and 30.1–35.0% lower peak memory**. Qualitative comparisons on the *real benchmark* further show recovery of fine details and textures. Code and reference checkpoints are available at [github.com/skethz/SpinSCI](https://github.com/skethz/SpinSCI).
+> **Abstract:** Video snapshot compressive imaging (SCI) recovers multiple frames from one spatiotemporally coded measurement. This paper proposes *SpinSCI*, a mask-conditioned Spatial-Temporal Spin Transformer whose *Mask-Conditioned Ising Refinement Block (MC-IRB)* combines attention logits and sensing information to form signed spin couplings. Finite mean-field updates gate residual feature refinement. Physics-guided initialization and final data consistency incorporate the measurement model. Compared with HiSViT<sub>9</sub>, SpinSCI achieves average PSNR gains of **0.51 dB**, **0.23 dB**, and **0.04 dB** on *small-scale gray, mid-scale color, and large-scale color benchmarks*, respectively, with **16.9% fewer parameters, 21.0–21.6% fewer FLOPs, 17.1–49.0% lower latency, and 59.9–63.3% lower peak memory**. Relative to DU-9stg, average PSNR differs by at most **0.13 dB** across these benchmarks, with **28.2–28.7% fewer FLOPs, 64.6–71.9% lower inference latency, and 30.1–32.7% lower peak memory**. Qualitative comparisons on the *real benchmark* further show recovery of fine details and textures. Code and reference checkpoints are available at [github.com/skethz/SpinSCI](https://github.com/skethz/SpinSCI).
 
 <p align="center">
   <img src="figures/efficiency.png" width="980" alt="Mid-scale color PSNR versus FLOPs and FP32 eager latency for all seven methods">
@@ -186,9 +186,9 @@ Small-scale gray and mid-scale color baseline PSNR/SSIM values come from the res
 | --- | ---: | ---: | ---: | ---: |
 | Small-scale gray | 7.47 | 1214 | 132 | 1850 |
 | Mid-scale color | 7.47 | 4856 | 630 | 7151 |
-| Large-scale color | 7.47 | 38402 | 4200 | 2424 |
+| Large-scale color | 7.47 | 38402 | 4169 | 2695 |
 
-All methods in the main-paper comparison use FP32 eager inference on an NVIDIA GH200 with batch size 1 and eight frames. One THOP module MAC counts as one FLOP. For every method, large-scale latency is estimated as 24 times the measured median for one tile. Peak memory is measured per tile. The [efficiency guide](docs/reproduction.md#efficiency-profiling) gives the profiling commands and exact values.
+All methods in the main-paper comparison use FP32 eager inference on an NVIDIA GH200 with batch size 1 and eight frames. One THOP module MAC counts as one FLOP. Large-scale latency and peak memory cover one complete snapshot: 24 sequential tile forwards with output assembly on the GPU. The [efficiency guide](docs/reproduction.md#efficiency-profiling) gives the profiling commands for SpinSCI-B and the [baselines](docs/reproduction.md#baseline-profiling), and the exact values.
 
 ```bash
 export CUDA_VISIBLE_DEVICES=0
