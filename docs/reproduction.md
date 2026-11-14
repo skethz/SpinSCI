@@ -198,8 +198,8 @@ diagnostic and parameters whose owning modules did not execute.
 
 | Case | Exact parameters | FLOPs (G) | Latency (ms) | Table peak (MiB) |
 | --- | ---: | ---: | ---: | ---: |
-| Gray 256 x 256 | 7,465,294 | 1214.393011 | 132.116 | 1850.170 |
-| Color 512 x 512 | 7,469,266 | 4855.741374 | 630.086 | 7151.387 |
+| Gray 256 x 256 | 7,465,294 | 1214.393011 | 131.136 | 1850.170 |
+| Color 512 x 512 | 7,469,266 | 4855.741374 | 635.070 | 7151.387 |
 | Large color | 7,469,266 | 38401.804538 | 4168.856 | 2694.662 |
 
 Large-color SpinSCI-B FLOPs use a full 1080 × 1920 forward. Large-color latency
